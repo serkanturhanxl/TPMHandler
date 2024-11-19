@@ -1,0 +1,14 @@
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\bin\Release\net8.0\TPMServer.exe
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\bin\Release\net8.0\TPMServer.deps.json
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\bin\Release\net8.0\TPMServer.runtimeconfig.json
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\bin\Release\net8.0\TPMServer.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\bin\Release\net8.0\TPMServer.pdb
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.AssemblyInfoInputs.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.AssemblyInfo.cs
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.csproj.CoreCompileInputs.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\refint\TPMServer.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.pdb
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\TPMServer.genruntimeconfig.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMServer\obj\Release\net8.0\ref\TPMServer.dll

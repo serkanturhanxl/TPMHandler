@@ -1,0 +1,14 @@
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\bin\Release\net8.0\TPMClient.exe
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\bin\Release\net8.0\TPMClient.deps.json
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\bin\Release\net8.0\TPMClient.runtimeconfig.json
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\bin\Release\net8.0\TPMClient.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\bin\Release\net8.0\TPMClient.pdb
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.AssemblyInfoInputs.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.AssemblyInfo.cs
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.csproj.CoreCompileInputs.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\refint\TPMClient.dll
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.pdb
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\TPMClient.genruntimeconfig.cache
+C:\Users\11051395\source\repos\TPMHandler\TPMClient\obj\Release\net8.0\ref\TPMClient.dll
