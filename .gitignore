@@ -75,3 +75,7 @@ bld/
 [Ll]ogs/
 *.pubxml
 
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj

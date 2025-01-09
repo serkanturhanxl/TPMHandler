@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 
 namespace TPMServer
 {
@@ -29,7 +30,7 @@ namespace TPMServer
             }
         }
 
-        private X509Certificate2 GetCertificate()
+        private X509Certificate2 GetCertificateWithEngine()
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             Console.WriteLine("Load cert from TPM!");
@@ -49,8 +50,39 @@ namespace TPMServer
             Console.WriteLine("SubjectName:" + certificate.SubjectName.Name);
             Console.WriteLine("-----------------------------------");
 
+            privateKey.Dispose();
+            rsa.Dispose();
+            tmpCert.Dispose();
+
             return certificate;
         }
+        private X509Certificate2 GetCertificateWithProvider()
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            Console.WriteLine("Load cert from TPM with provider!!");
+            var ssl = SafeEvpPKeyHandle.OpenSslVersion;
+            Console.WriteLine("OpenSSL version: " + string.Format("{0:X}", ssl));
+
+            string handle = "handle:0x81000006";
+            Console.WriteLine("Handle : " + handle);
+            SafeEvpPKeyHandle privateKey = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", handle);
+            RSAOpenSsl rsa = new(privateKey);
+            X509Certificate2 tmpCert = new X509Certificate2("/etc/ssl/certs/ssl_certificate.pem");
+            X509Certificate2 certificate = tmpCert.CopyWithPrivateKey(rsa);
+            var isValid = certificate.Verify();
+            Console.WriteLine("Validation:" + isValid);
+
+            Console.WriteLine("IssuerName:" + certificate.IssuerName.Name);
+            Console.WriteLine("SubjectName:" + certificate.SubjectName.Name);
+            Console.WriteLine("-----------------------------------");
+
+            privateKey.Dispose();
+            rsa.Dispose();
+            tmpCert.Dispose();
+
+            return certificate;
+        }
+        
         public void Listen(IPAddress ip, int port)
         {
             Console.WriteLine("Listen method executed!");
@@ -63,7 +95,7 @@ namespace TPMServer
                 Console.WriteLine("Listener starting.");
                 // Start listening for incoming connections
                 listener.Start();
-                var cert = GetCertificate();
+                var cert = GetCertificateWithProvider();
 
                 Console.WriteLine("TCP Server started. Listening for incoming connections...");
 
@@ -76,7 +108,19 @@ namespace TPMServer
                     _stream = new SslStream(_client.GetStream(), false);
                     try
                     {
-                        _stream.AuthenticateAsServer(cert, clientCertificateRequired: false, checkCertificateRevocation: true);
+                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions
+                        {
+                            EnabledSslProtocols = SslProtocols.Tls12, // Only use these protocols
+                            CipherSuitesPolicy = new CipherSuitesPolicy(new[]
+                            {
+                                TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
+                            }),
+                            ServerCertificate = cert, //cert from 0x81000006 handle
+                            ClientCertificateRequired = true,
+                            EncryptionPolicy = EncryptionPolicy.RequireEncryption,
+                            
+                        };
+                        _stream.AuthenticateAsServer(sslOptions);
 
                         // Read and write data in a loop until the client disconnects
                         while (true)
@@ -94,7 +138,7 @@ namespace TPMServer
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.ToString());
+                        //Console.WriteLine(ex.ToString());
                         throw;
                     }
                 }
