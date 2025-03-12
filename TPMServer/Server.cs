@@ -82,7 +82,7 @@ namespace TPMServer
 
             return certificate;
         }
-        
+
         public void Listen(IPAddress ip, int port)
         {
             Console.WriteLine("Listen method executed!");
@@ -95,7 +95,22 @@ namespace TPMServer
                 Console.WriteLine("Listener starting.");
                 // Start listening for incoming connections
                 listener.Start();
-                var cert = GetCertificateWithProvider();
+
+                // I could directly return X509Certificate2 from CreateSelfSignedCertificate method but I am also testing if there is no lifetime issue therefore all the dancing here
+                X509Certificate2 serverCert;
+                using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", /* my RSA key handle */ "handle:0x81000009"))
+                using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
+                {
+                    using (X509Certificate2 serverCertPub = new X509Certificate2("ssl_certificate.pem"))
+                    {
+                        Console.WriteLine("Load cert from TPM with provider!! About to load!");
+                        serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
+                        Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
+                    }
+                }
+
+                //var cert = GetCertificateWithProvider();
+                var cert = serverCert;  
 
                 Console.WriteLine("TCP Server started. Listening for incoming connections...");
 
@@ -108,18 +123,16 @@ namespace TPMServer
                     _stream = new SslStream(_client.GetStream(), false);
                     try
                     {
-                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions
+                        var sslOptions = new SslServerAuthenticationOptions()
                         {
-                            EnabledSslProtocols = SslProtocols.Tls12, // Only use these protocols
+                            ServerCertificate = cert,
+                            EnabledSslProtocols = SslProtocols.Tls12,
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
                                 TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
                             }),
-                            ServerCertificate = cert, //cert from 0x81000006 handle
-                            ClientCertificateRequired = true,
-                            EncryptionPolicy = EncryptionPolicy.RequireEncryption,
-                            
                         };
+
                         _stream.AuthenticateAsServer(sslOptions);
 
                         // Read and write data in a loop until the client disconnects
