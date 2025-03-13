@@ -98,19 +98,15 @@ namespace TPMServer
 
                 // I could directly return X509Certificate2 from CreateSelfSignedCertificate method but I am also testing if there is no lifetime issue therefore all the dancing here
                 X509Certificate2 serverCert;
-                using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", /* my RSA key handle */ "handle:0x81000009"))
-                using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
-                {
-                    using (X509Certificate2 serverCertPub = new X509Certificate2("ssl_certificate.pem"))
-                    {
-                        Console.WriteLine("Load cert from TPM with provider!! About to load!");
-                        serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
-                        Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
-                    }
-                }
+                SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", /* my RSA key handle */ "handle:0x81000009");
+                RSA rsaPri = new RSAOpenSsl(priKeyHandle);
+                X509Certificate2 serverCertPub = new X509Certificate2("ssl_certificate.pem");
+                Console.WriteLine("Load cert from TPM with provider!! About to load!!");
+                serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
+                Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
 
                 //var cert = GetCertificateWithProvider();
-                var cert = serverCert;  
+                var cert = serverCert;
 
                 Console.WriteLine("TCP Server started. Listening for incoming connections...");
 
@@ -126,7 +122,7 @@ namespace TPMServer
                         var sslOptions = new SslServerAuthenticationOptions()
                         {
                             ServerCertificate = cert,
-                            EnabledSslProtocols = SslProtocols.Tls12,
+                            EncryptionPolicy = EncryptionPolicy.AllowNoEncryption,
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
                                 TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
