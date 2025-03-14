@@ -119,6 +119,8 @@ namespace TPMServer
                     _stream = new SslStream(_client.GetStream(), false);
                     try
                     {
+                        X509Certificate2Collection collection = new X509Certificate2Collection(new X509Certificate2("combinedchain.pem"));
+
                         var sslOptions = new SslServerAuthenticationOptions()
                         {
                             ServerCertificate = cert,
@@ -126,7 +128,8 @@ namespace TPMServer
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
                                 TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
-                            }),
+                            }),                            
+                            ServerCertificateContext = SslStreamCertificateContext.Create(cert, collection, trust: SslCertificateTrust.CreateForX509Collection(collection, true)),
                         };
 
                         _stream.AuthenticateAsServer(sslOptions);
