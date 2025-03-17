@@ -82,6 +82,40 @@ namespace TPMServer
 
             return certificate;
         }
+        private static X509Certificate2 CreateSelfSignedRsaCertificate(RSASignaturePadding padding)
+        {
+            Console.WriteLine("CreateSelfSignedRsaCertificate method executed!");
+            // We will get rid of original handle and make sure X509Certificate2's duplicate is still working.
+            X509Certificate2 serverCert;
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", "handle:0x81000009"))
+            using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
+            {
+                serverCert = CreateSelfSignedCertificate(rsaPri, padding);
+            }
+
+            return serverCert;
+        }
+        private static X509Certificate2 CreateSelfSignedCertificate(RSA rsa, RSASignaturePadding padding)
+        {
+            var certReq = new CertificateRequest("CN=testservereku.contoso.com", rsa, HashAlgorithmName.SHA256, padding);
+            return FinishCertCreation(certReq);
+        }
+        private static X509Certificate2 FinishCertCreation(CertificateRequest certificateRequest)
+        {
+            Console.WriteLine("FinishCertCreation method executed!");
+            certificateRequest.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForEndEntity());
+            certificateRequest.CertificateExtensions.Add(
+                new X509KeyUsageExtension(
+                    // We need to allow KeyEncipherment for RSA ciphersuite which doesn't use PSS.
+                    // PSS is causing issues with some TPMs (ignoring salt length)
+                    X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment,
+                    critical: false)
+            );
+
+            certificateRequest.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
+            Console.WriteLine("FinishCertCreation method executed! About to create self signed certificate!!");
+            return certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
+        }
 
         public void Listen(IPAddress ip, int port)
         {
@@ -106,7 +140,8 @@ namespace TPMServer
                 Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
 
                 //var cert = GetCertificateWithProvider();
-                var cert = serverCert;
+                //var cert = serverCert;
+                var cert = CreateSelfSignedRsaCertificate(RSASignaturePadding.Pkcs1);
 
                 Console.WriteLine("TCP Server started. Listening for incoming connections...");
 
@@ -128,7 +163,7 @@ namespace TPMServer
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
                                 TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
-                            }),                            
+                            }),
                             ServerCertificateContext = SslStreamCertificateContext.Create(cert, collection, trust: SslCertificateTrust.CreateForX509Collection(collection, true)),
                         };
 
