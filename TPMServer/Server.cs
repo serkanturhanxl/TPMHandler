@@ -139,9 +139,20 @@ namespace TPMServer
                 serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
                 Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
 
+                Console.WriteLine("Is Kmac256 Supported:" + Kmac256.IsSupported);
+                //using (SafeEvpPKeyHandle priKeyHandle2 = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", "handle:0x81000009"))
+                //using (RSA rsaPri2 = new RSAOpenSsl(priKeyHandle2))
+                //{
+                //    Console.WriteLine("Sign data with empty data");
+                //    byte[] sig = rsaPri2.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                //    Console.WriteLine($"Signature of empty data: {Convert.ToHexString(sig)}");
+                //}
                 //var cert = GetCertificateWithProvider();
                 //var cert = serverCert;
-                var cert = CreateSelfSignedRsaCertificate(RSASignaturePadding.Pkcs1);
+                var cert = CreateSelfSignedRsaCertificate(RSASignaturePadding.Pss);
+                File.WriteAllBytes("selfsign.pem", cert.RawData);
+
+                Console.WriteLine("Certificate exported..");
 
                 Console.WriteLine("TCP Server started. Listening for incoming connections...");
 
@@ -163,8 +174,9 @@ namespace TPMServer
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
                                 TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
+                                //TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
                             }),
-                            ServerCertificateContext = SslStreamCertificateContext.Create(cert, collection, trust: SslCertificateTrust.CreateForX509Collection(collection, true)),
+                            //ServerCertificateContext = SslStreamCertificateContext.Create(cert, collection, trust: SslCertificateTrust.CreateForX509Collection(collection, true)),
                         };
 
                         _stream.AuthenticateAsServer(sslOptions);
