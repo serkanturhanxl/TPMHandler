@@ -21,6 +21,7 @@ namespace TPMServer
         private TcpClient _client;
         private SslStream _stream;
         private bool _isSecure = true;
+        private static string _handle = "0x81000004";
         public void Listen()
         {
             if (!_isListening)
@@ -63,7 +64,7 @@ namespace TPMServer
             var ssl = SafeEvpPKeyHandle.OpenSslVersion;
             Console.WriteLine("OpenSSL version: " + string.Format("{0:X}", ssl));
 
-            string handle = "handle:0x81000006";
+            string handle = $"handle:{_handle}";
             Console.WriteLine("Handle : " + handle);
             SafeEvpPKeyHandle privateKey = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", handle);
             RSAOpenSsl rsa = new(privateKey);
@@ -82,12 +83,25 @@ namespace TPMServer
 
             return certificate;
         }
+        private static X509Certificate2 CreateSelfSignedECDCertificate()
+        {
+            Console.WriteLine("CreateSelfSignedECDCertificate method executed!");
+            // We will get rid of original handle and make sure X509Certificate2's duplicate is still working.
+            X509Certificate2 serverCert;
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", $"handle:{_handle}"))
+            using (ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle))
+            {
+                serverCert = CreateSelfSignedCertificate(ecdsaPri);
+            }
+
+            return serverCert;
+        }
         private static X509Certificate2 CreateSelfSignedRsaCertificate(RSASignaturePadding padding)
         {
             Console.WriteLine("CreateSelfSignedRsaCertificate method executed!");
             // We will get rid of original handle and make sure X509Certificate2's duplicate is still working.
             X509Certificate2 serverCert;
-            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", "handle:0x81000009"))
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", $"handle:{_handle}"))
             using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
             {
                 serverCert = CreateSelfSignedCertificate(rsaPri, padding);
@@ -98,6 +112,11 @@ namespace TPMServer
         private static X509Certificate2 CreateSelfSignedCertificate(RSA rsa, RSASignaturePadding padding)
         {
             var certReq = new CertificateRequest("CN=testservereku.contoso.com", rsa, HashAlgorithmName.SHA256, padding);
+            return FinishCertCreation(certReq);
+        }
+        private static X509Certificate2 CreateSelfSignedCertificate(ECDsa ecdsa)
+        {
+            var certReq = new CertificateRequest("CN=testservereku.contoso.com", ecdsa, HashAlgorithmName.SHA256);
             return FinishCertCreation(certReq);
         }
         private static X509Certificate2 FinishCertCreation(CertificateRequest certificateRequest)
@@ -130,17 +149,17 @@ namespace TPMServer
                 // Start listening for incoming connections
                 listener.Start();
 
-                // I could directly return X509Certificate2 from CreateSelfSignedCertificate method but I am also testing if there is no lifetime issue therefore all the dancing here
-                X509Certificate2 serverCert;
-                SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", /* my RSA key handle */ "handle:0x81000009");
-                RSA rsaPri = new RSAOpenSsl(priKeyHandle);
-                X509Certificate2 serverCertPub = new X509Certificate2("ssl_certificate.pem");
-                Console.WriteLine("Load cert from TPM with provider!! About to load!!");
-                serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
-                Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
+                //// I could directly return X509Certificate2 from CreateSelfSignedCertificate method but I am also testing if there is no lifetime issue therefore all the dancing here
+                //X509Certificate2 serverCert;
+                //SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", /* my RSA key handle */ $"handle:{_handle}");
+                //RSA rsaPri = new RSAOpenSsl(priKeyHandle);
+                //X509Certificate2 serverCertPub = new X509Certificate2("ssl_certificate.pem");
+                //Console.WriteLine("Load cert from TPM with provider!! About to load!!");
+                //serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
+                //Console.WriteLine("Load cert from TPM with provider!! Loaded here!!!");
 
                 Console.WriteLine("Is Kmac256 Supported:" + Kmac256.IsSupported);
-                //using (SafeEvpPKeyHandle priKeyHandle2 = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", "handle:0x81000009"))
+                //using (SafeEvpPKeyHandle priKeyHandle2 = SafeEvpPKeyHandle.OpenKeyFromProvider("tpm2", $"handle:{_handle}"))
                 //using (RSA rsaPri2 = new RSAOpenSsl(priKeyHandle2))
                 //{
                 //    Console.WriteLine("Sign data with empty data");
@@ -149,7 +168,8 @@ namespace TPMServer
                 //}
                 //var cert = GetCertificateWithProvider();
                 //var cert = serverCert;
-                var cert = CreateSelfSignedRsaCertificate(RSASignaturePadding.Pss);
+                //var cert = CreateSelfSignedRsaCertificate(RSASignaturePadding.Pss);
+                var cert = CreateSelfSignedECDCertificate();
                 File.WriteAllBytes("selfsign.pem", cert.RawData);
 
                 Console.WriteLine("Certificate exported..");
@@ -165,7 +185,7 @@ namespace TPMServer
                     _stream = new SslStream(_client.GetStream(), false);
                     try
                     {
-                        X509Certificate2Collection collection = new X509Certificate2Collection(new X509Certificate2("combinedchain.pem"));
+                        //X509Certificate2Collection collection = new X509Certificate2Collection(new X509Certificate2("combinedchain.pem"));
 
                         var sslOptions = new SslServerAuthenticationOptions()
                         {
@@ -173,8 +193,8 @@ namespace TPMServer
                             EncryptionPolicy = EncryptionPolicy.AllowNoEncryption,
                             CipherSuitesPolicy = new CipherSuitesPolicy(new[]
                             {
-                                TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
-                                //TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+                                //TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256
+                                TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
                             }),
                             //ServerCertificateContext = SslStreamCertificateContext.Create(cert, collection, trust: SslCertificateTrust.CreateForX509Collection(collection, true)),
                         };
